@@ -1,6 +1,8 @@
 # Implementation of the ROCA attack (CVE-2017-15361)
 This is the implementation of the paper [Return of the Coppersmith attack](https://roca.crocs.fi.muni.cz/).
+
 The implementation is in python 2.7 and uses the Howgrave-Graham code from [RSA-and-LLL-attacks](https://github.com/mimoo/RSA-and-LLL-attacks).
+
 For the detection of vulnerable keys, the code from the original authors of the paper is used (detect.py) [crocs-muni](https://github.com/crocs-muni/roca)
 
 # Usage
@@ -26,17 +28,25 @@ $ sbatch slurm.sh <path to key>
 data/512.pem                 -> Vulnerable RSA 512-bit key
 
 LICENSE                     -> APACHE 2.0
+
 README.md                   -> This file
+
 requirements.txt            -> Python 2.7 requirements
 
 HPC/optimization_hpc.py -> modified attack implemetation for HPC
+
 HPC/slurm.sh            -> SLURM start script for the attack
+
 HPC/split_iteration.py  -> helper for SCRUM
 
 src/optimization.py         -> Optimized ROCA attack
+
 src/params.py               -> Used to calculate the parameters
+
 src/roca.py                 -> Non-optimized attack
-src/oca.sage               -> Pure sage version of the attack
+
+src/roca.sage               -> Pure sage version of the attack
+
 src/detect.py               -> [crocs-muni](https://github.com/crocs-muni/roca)
 
 test/test_roca.py            -> Test the attack

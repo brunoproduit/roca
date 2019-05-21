@@ -19,8 +19,11 @@ $ cp ../test/test_roca.py .
 $ python test_roca.py
 ```
 # Optimization
-The optimization is based on an analysis of properties observed from real keys exported from affected card (Infineon JavaCard SLJ52GCA150). The parameters a' and k' turn out to have a lower entropy than stated in the original paper. This is used to change the iteration order and speedup the attack.
+The optimization is based on an analysis of properties observed from real keys exported from affected card (Infineon JavaCard SLJ52GCA150). The parameters a' and k' turn out to have a lower entropy than stated in the original paper.
 
+![alt text](https://raw.githubusercontent.com/brunoproduit/roca/master/entropy_ap_kp.png "Entropy of a' and k'")
+
+a' is fixed at the MSB and biased to be even, This is used to shrink the bruteforce range and speedup the attack.
 
 # HPC
 ```

@@ -5,6 +5,8 @@ The implementation is in python 2.7 and uses the Howgrave-Graham code from [RSA-
 
 For the detection of vulnerable keys, the code from the original authors of the paper is used (detect.py) [crocs-muni](https://github.com/crocs-muni/roca)
 
+PR's welcome!
+
 # Usage
 ```
 $ python roca.py <path to key> -j <number of cores>
@@ -56,3 +58,4 @@ src/roca.sage               -> Pure sage version of the attack
 src/detect.py               -> [crocs-muni](https://github.com/crocs-muni/roca)
 
 test/test_roca.py            -> Test the attack
+

@@ -270,11 +270,10 @@ def roca(N, cpus=1):
   top = (c_prime + ord_prime)/2
   
   # Spawn processes
-  for i in range(1, cpus+1):
-    if i == 1:
-      start, stop = param[keylength]['c_a'], floor(top / cpus)
-    else:
-      start, stop = floor(top * (i-1) / cpus), floor(top * i / cpus)    
+  work_len = floor((top - param[keylength]['c_a'] + cpus - 1) / cpus)
+  bottom = param[keylength]['c_a']
+  for i in range(cpus):
+    start, stop = bottom + i*work_len, bottom + (i+1)*work_len
     w = Worker(args=(N, keylength, start, stop, factors_queue, finished))
     w.start()
     processes.append(w)

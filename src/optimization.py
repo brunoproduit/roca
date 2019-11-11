@@ -170,7 +170,7 @@ class Worker(multiprocessing.Process):
   def run(self):
     try:
       # Fetch parameters according to key size
-      N, keylength, start, stop, factors_queue, manager = self._args      
+      N, keylength, start, stop, factors_queue, finished = self._args
       M_prime = param[keylength]['M_prime']
       beta = 0.5 
       mm = param[keylength]['m']
@@ -184,7 +184,7 @@ class Worker(multiprocessing.Process):
       # First try all even a' (a' is stongly biased to be even):
       a_prime = start
       while a_prime < stop:
-        if manager.finished:
+        if finished.is_set():
           break 
           
         # Construct polynomial
@@ -205,14 +205,14 @@ class Worker(multiprocessing.Process):
             factor2 = N // factor1
             factors_queue.put((factor1, factor2))
             print ("[+] p, q", factor1, factor2)
-            manager.finished = True
+            finished.set()
             break
         a_prime += 2 # Only even
       
       # If not found iterate over odd a'
       a_prime = start + 1
       while a_prime < stop:
-        if manager.finished:
+        if finished.is_set():
           break 
           
         # Construct polynomial
@@ -233,7 +233,7 @@ class Worker(multiprocessing.Process):
             factor2 = N // factor1
             factors_queue.put((factor1, factor2))
             print ("[+] p, q", factor1, factor2)
-            manager.finished = True
+            finished.set()
             break
         a_prime += 2  # Only odd 
 
@@ -259,7 +259,7 @@ def roca(N, cpus=1):
   # Parrallelization options  
   processes = []
   manager = multiprocessing.Manager()
-  manager.finished = False
+  finished = manager.Event()
   factors_queue = multiprocessing.Queue()
   
   # bruteforce
@@ -275,7 +275,7 @@ def roca(N, cpus=1):
       start, stop = param[keylength]['c_a'], floor(top / cpus)
     else:
       start, stop = floor(top * (i-1) / cpus), floor(top * i / cpus)    
-    w = Worker(args=(N, keylength, start, stop, factors_queue, manager))
+    w = Worker(args=(N, keylength, start, stop, factors_queue, finished))
     w.start()
     processes.append(w)
 

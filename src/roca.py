@@ -179,27 +179,27 @@ class Worker(multiprocessing.Process):
         if manager.finished:
           break 
           
-          # Construct polynomial
-          m_inv = int(inverse_mod(M_prime, N))
-          k_tmp = int(pow(65537, a_prime, M_prime))
-          known_part_pol = int(k_tmp * m_inv)
-          F = PolynomialRing(Zmod(N), implementation='NTL', names=('x',))
-          (x,) = F._first_ngens(1)
-          pol = x + known_part_pol
-          
-          # Get roots of polynomial using coppersmith
-          roots = coppersmith_howgrave_univariate(pol, N, beta, mm, tt, XX)
+        # Construct polynomial
+        m_inv = int(inverse_mod(M_prime, N))
+        k_tmp = int(pow(65537, a_prime, M_prime))
+        known_part_pol = int(k_tmp * m_inv)
+        F = PolynomialRing(Zmod(N), implementation='NTL', names=('x',))
+        (x,) = F._first_ngens(1)
+        pol = x + known_part_pol
+        
+        # Get roots of polynomial using coppersmith
+        roots = coppersmith_howgrave_univariate(pol, N, beta, mm, tt, XX)
          
-          # Check if roots are p, q
-          for root in roots:
-            factor1 = k_tmp + abs(root) * M_prime
-            if mod(N, factor1) == 0:
-              factor2 = N // factor1
-              factors_queue.put((factor1, factor2))
-              print ("[+] p, q", factor1, factor2)
-              manager.finished = True
-              break
-          a_prime += 1
+        # Check if roots are p, q
+        for root in roots:
+          factor1 = k_tmp + abs(root) * M_prime
+          if mod(N, factor1) == 0:
+            factor2 = N // factor1
+            factors_queue.put((factor1, factor2))
+            print ("[+] p, q", factor1, factor2)
+            manager.finished = True
+            break
+        a_prime += 1
 
     except KeyboardInterrupt as e:
         print ("[-] Ctrl+C issued ...")

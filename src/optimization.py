@@ -170,7 +170,7 @@ class Worker(multiprocessing.Process):
   def run(self):
     try:
       # Fetch parameters according to key size
-      N, keylength, start, stop, factors_queue, manager = self._args      
+      N, keylength, start, stop, factors_queue, finished = self._args
       M_prime = param[keylength]['M_prime']
       beta = 0.5 
       mm = param[keylength]['m']
@@ -184,58 +184,58 @@ class Worker(multiprocessing.Process):
       # First try all even a' (a' is stongly biased to be even):
       a_prime = start
       while a_prime < stop:
-        if manager.finished:
+        if finished.is_set():
           break 
           
-          # Construct polynomial
-          m_inv = int(inverse_mod(M_prime, N))
-          k_tmp = int(pow(65537, a_prime, M_prime))
-          known_part_pol = int(k_tmp * m_inv)
-          F = PolynomialRing(Zmod(N), implementation='NTL', names=('x',))
-          (x,) = F._first_ngens(1)
-          pol = x + known_part_pol
-          
-          # Get roots of polynomial using coppersmith
-          roots = coppersmith_howgrave_univariate(pol, N, beta, mm, tt, XX)
+        # Construct polynomial
+        m_inv = int(inverse_mod(M_prime, N))
+        k_tmp = int(pow(65537, a_prime, M_prime))
+        known_part_pol = int(k_tmp * m_inv)
+        F = PolynomialRing(Zmod(N), implementation='NTL', names=('x',))
+        (x,) = F._first_ngens(1)
+        pol = x + known_part_pol
+        
+        # Get roots of polynomial using coppersmith
+        roots = coppersmith_howgrave_univariate(pol, N, beta, mm, tt, XX)
          
-          # Check if roots are p, q
-          for root in roots:
-            factor1 = k_tmp + abs(root) * M_prime
-            if mod(N, factor1) == 0:
-              factor2 = N // factor1
-              factors_queue.put((factor1, factor2))
-              print ("[+] p, q", factor1, factor2)
-              manager.finished = True
-              break
-          a_prime += 2 # Only even
+        # Check if roots are p, q
+        for root in roots:
+          factor1 = k_tmp + abs(root) * M_prime
+          if mod(N, factor1) == 0:
+            factor2 = N // factor1
+            factors_queue.put((factor1, factor2))
+            print ("[+] p, q", factor1, factor2)
+            finished.set()
+            break
+        a_prime += 2 # Only even
       
       # If not found iterate over odd a'
       a_prime = start + 1
       while a_prime < stop:
-        if manager.finished:
+        if finished.is_set():
           break 
           
-          # Construct polynomial
-          m_inv = int(inverse_mod(M_prime, N))
-          k_tmp = int(pow(65537, a_prime, M_prime))
-          known_part_pol = int(k_tmp * m_inv)
-          F = PolynomialRing(Zmod(N), implementation='NTL', names=('x',))
-          (x,) = F._first_ngens(1)
-          pol = x + known_part_pol
-          
-          # Get roots of polynomial using coppersmith
-          roots = coppersmith_howgrave_univariate(pol, N, beta, mm, tt, XX)
-         
-          # Check if roots are p, q
-          for root in roots:
-            factor1 = k_tmp + abs(root) * M_prime
-            if mod(N, factor1) == 0:
-              factor2 = N // factor1
-              factors_queue.put((factor1, factor2))
-              print ("[+] p, q", factor1, factor2)
-              manager.finished = True
-              break
-          a_prime += 2  # Only odd 
+        # Construct polynomial
+        m_inv = int(inverse_mod(M_prime, N))
+        k_tmp = int(pow(65537, a_prime, M_prime))
+        known_part_pol = int(k_tmp * m_inv)
+        F = PolynomialRing(Zmod(N), implementation='NTL', names=('x',))
+        (x,) = F._first_ngens(1)
+        pol = x + known_part_pol
+        
+        # Get roots of polynomial using coppersmith
+        roots = coppersmith_howgrave_univariate(pol, N, beta, mm, tt, XX)
+       
+        # Check if roots are p, q
+        for root in roots:
+          factor1 = k_tmp + abs(root) * M_prime
+          if mod(N, factor1) == 0:
+            factor2 = N // factor1
+            factors_queue.put((factor1, factor2))
+            print ("[+] p, q", factor1, factor2)
+            finished.set()
+            break
+        a_prime += 2  # Only odd 
 
     except KeyboardInterrupt as e:
         print ("[-] Ctrl+C issued ...")
@@ -259,7 +259,7 @@ def roca(N, cpus=1):
   # Parrallelization options  
   processes = []
   manager = multiprocessing.Manager()
-  manager.finished = False
+  finished = manager.Event()
   factors_queue = multiprocessing.Queue()
   
   # bruteforce
@@ -270,12 +270,11 @@ def roca(N, cpus=1):
   top = (c_prime + ord_prime)/2
   
   # Spawn processes
-  for i in range(1, cpus+1):
-    if i == 1:
-      start, stop = param[keylength]['c_a'], floor(top / cpus)
-    else:
-      start, stop = floor(top * (i-1) / cpus), floor(top * i / cpus)    
-    w = Worker(args=(N, keylength, start, stop, factors_queue, manager))
+  work_len = floor((top - param[keylength]['c_a'] + cpus - 1) / cpus)
+  bottom = param[keylength]['c_a']
+  for i in range(cpus):
+    start, stop = bottom + i*work_len, bottom + (i+1)*work_len
+    w = Worker(args=(N, keylength, start, stop, factors_queue, finished))
     w.start()
     processes.append(w)
 

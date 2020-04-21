@@ -178,7 +178,10 @@ class Worker(multiprocessing.Process):
 
       # Uses decimal for arbitrary floating point precision
       XX = int((2*pow(N, Decimal(beta))) / M_prime) 
-
+      m_inv = int(inverse_mod(M_prime, N))
+      F = PolynomialRing(Zmod(N), implementation='NTL', names=('x',))
+      (x,) = F._first_ngens(1)
+      
       # Bruteforce until p, q are found
 
       # First try all even a' (a' is stongly biased to be even):
@@ -188,11 +191,8 @@ class Worker(multiprocessing.Process):
           break 
           
         # Construct polynomial
-        m_inv = int(inverse_mod(M_prime, N))
         k_tmp = int(pow(65537, a_prime, M_prime))
         known_part_pol = int(k_tmp * m_inv)
-        F = PolynomialRing(Zmod(N), implementation='NTL', names=('x',))
-        (x,) = F._first_ngens(1)
         pol = x + known_part_pol
         
         # Get roots of polynomial using coppersmith
@@ -216,11 +216,8 @@ class Worker(multiprocessing.Process):
           break 
           
         # Construct polynomial
-        m_inv = int(inverse_mod(M_prime, N))
         k_tmp = int(pow(65537, a_prime, M_prime))
         known_part_pol = int(k_tmp * m_inv)
-        F = PolynomialRing(Zmod(N), implementation='NTL', names=('x',))
-        (x,) = F._first_ngens(1)
         pol = x + known_part_pol
         
         # Get roots of polynomial using coppersmith

